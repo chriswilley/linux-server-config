@@ -295,9 +295,8 @@ To improve performance, I added a memory swap file as one did not exist by defau
 
 In addition to the links above, I used a lot of resources to help me optimize the server setup. Here are a few of the ones I used:
 
-* [Viktor Petersson's blog](http://blog.viktorpetersson.com/post/92729917189/setting-up-monit-to-monitor-apache-and-postgresql-on-ubu): This helped me setup monit better
-* [n0where.net](https://n0where.net/send-only-postfix-server/): This blog post showed me hot to set up an email server to send only and not relay messages
+* [Viktor Petersson's blog](http://blog.viktorpetersson.com/post/92729917189/setting-up-monit-to-monitor-apache-and-postgresql-on-ubu): This helped me setup monit better.
+* [n0where.net](https://n0where.net/send-only-postfix-server/): This blog post showed me how to set up an email server to send only and not relay messages.
 * [Rob Golding's blog](http://www.robgolding.com/blog/2011/11/12/django-in-production-part-1---the-stack/): Although this post is about Django in production, the overall stack is what I was aiming for (especially the Nginx part). It's also what I've used for a couple of my own Django projects.
-* [peatiscoding](http://peatiscoding.me/geek-stuff/mod_wsgi-apache-virtualenv/): This post gave me some insights above and beyond the flask docs.
-* [LinuxCareer.com](http://how-to.linuxcareer.com/using-cron-scheduler-on-linux-systems): This post was helpful for me in getting crontab entries right.
+* [peatiscoding](http://peatiscoding.me/geek-stuff/mod_wsgi-apache-virtualenv/): This post gave me some insights above and beyond the flask docs regarding Apache and mod_wsgi setup.
 * [DigitalOcean Community](https://www.digitalocean.com/community/tutorials/how-to-protect-an-nginx-server-with-fail2ban-on-ubuntu-14-04): This blog post was HUGE in helping me setup fail2ban to protect Nginx. I stole from it liberally.
