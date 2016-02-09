@@ -224,6 +224,8 @@ I added an account with sudo access for myself to use, and one for the Udacity g
 
 I granted sudo access to the other two accounts by adding config files for them to /etc/sudoers.d/ and restricting permissions to 0600 on those files.
 
+Although password authentication is not allowed in ssh, I ensured the passwords for all accounts was complex (including letters, numbers, symbols, etc).
+
 ### ssh
 
 Following best practices, I changed the default SSH port from 22 to 2200. I did this by altering the Port line in /etc/ssh/sshd_config to:
