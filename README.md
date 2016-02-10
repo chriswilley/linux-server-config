@@ -32,7 +32,7 @@ Reverse proxy for apache and static file server. I chose to use Nginx because it
 
 The main Nginx configuration file is located at /etc/nginx/nginx.conf. I kept the default settings in this file.
 
-I added a config file for the catalog application, placing it in /etc/nginx/sites-available/catalog and creating a symlink in /etc/nginx/sites-enabled/. I removed the default symlink from that folder as well. I added location blocks in the file for /static (JavaScript, CSS, project images) and /media (uploaded user images) to serve files in those folder from Nginx rather than Apache to improve performance. I've placed comments in this config file for reference.
+I added a config file for the catalog application, placing it in /etc/nginx/sites-available/catalog and creating a symlink in /etc/nginx/sites-enabled/. I removed the default symlink from that folder as well. I added location blocks in the file for /static (JavaScript, CSS, project images) and /media (uploaded user images) to serve files in those folders from Nginx rather than Apache to improve performance. I've placed comments in this config file for reference.
 
 ### apache/mod_wsgi
 
@@ -59,7 +59,7 @@ ServerName ec2-54-149-57-47.us-west-2.compute.amazonaws.com
 
 <Directory /usr/share>
         AllowOverride None
-        Require all denied  # no need to allow browsing of this folder
+        Require all denied
 </Directory>
 ```
 
@@ -174,7 +174,7 @@ to the /etc/cron-apt/config file so that the utility would email all messages to
 
 Fail2ban watches application log files for repeated requests that match the user-defined filters (written as regular expressions). Its purpose is to derail DOS attacks and other automated intrusion attempts (like brute force attempts to guess a password for SSH access).
 
-Like monit, fail2ban works with user-defined config files (called filters). I made no changes to the program default config file located at /etc/fail2ban/fail2ban.conf. Using best pactices, I copied /etc/fail2ban/jail.conf to /etc/fail2ban/jail.local and made service changes to that file. The jail config file specifies the log files fail2ban should monitor for a given service definition as well as the port number to check. For example, the default ssh jail config is:
+Like monit, fail2ban works with user-defined config files (called filters). I made no changes to the program default config file located at /etc/fail2ban/fail2ban.conf. Following best pactices, I copied /etc/fail2ban/jail.conf to /etc/fail2ban/jail.local and made service changes to that file. The jail config file specifies the log files fail2ban should monitor for a given service definition as well as the port number to check. For example, the default ssh jail config is:
 
 ```
 [ssh]
@@ -201,7 +201,11 @@ I also added a few of my own to further protect Nginx:
 * nginx-nohome.conf
 * nginx-noscript.conf
 
-I added comments to the filter files for reference.
+I added comments to the filter files for reference. I also changed some of the default settings in jail.local; specifically:
+
+* I set the destemail parameter to the root alias, so that I would receive email messages from fail2ban
+* I set the mta parameter to 'mail' so that fail2ban would use the mail command rather than sendmail
+* I changed the action parameter to 'action_mwl' which bans an IP and emails the destemail address with whois information for the banned IP as well as a copy of the log file entry written to fail2ban.log
 
 ### postfix
 
@@ -295,10 +299,10 @@ To improve performance, I added a memory swap file as one did not exist by defau
 
 ## Resources used
 
-In addition to the links above, I used a lot of resources to help me optimize the server setup. Here are a few of the ones I used:
+In addition to the links above and the various software docs, I used a lot of resources to help me optimize the server setup. Here are a few of the ones I used:
 
 * [Viktor Petersson's blog](http://blog.viktorpetersson.com/post/92729917189/setting-up-monit-to-monitor-apache-and-postgresql-on-ubu): This helped me setup monit better.
 * [n0where.net](https://n0where.net/send-only-postfix-server/): This blog post showed me how to set up an email server to send only and not relay messages.
 * [Rob Golding's blog](http://www.robgolding.com/blog/2011/11/12/django-in-production-part-1---the-stack/): Although this post is about Django in production, the overall stack is what I was aiming for (especially the Nginx part). It's also what I've used for a couple of my own Django projects.
 * [peatiscoding](http://peatiscoding.me/geek-stuff/mod_wsgi-apache-virtualenv/): This post gave me some insights above and beyond the flask docs regarding Apache and mod_wsgi setup in a virtualenv.
-* [DigitalOcean Community](https://www.digitalocean.com/community/tutorials/how-to-protect-an-nginx-server-with-fail2ban-on-ubuntu-14-04): This blog post was HUGE in helping me setup fail2ban to protect Nginx. I stole from it liberally.
+* [DigitalOcean Community](https://www.digitalocean.com/community/tutorials/how-to-protect-an-nginx-server-with-fail2ban-on-ubuntu-14-04): This blog post was HUGE in helping me setup fail2ban to protect Nginx. I ~~stole~~ borrowed from it liberally.
