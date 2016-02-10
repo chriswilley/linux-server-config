@@ -148,7 +148,9 @@ Within each of these service config files I made changes based on my own needs. 
 
 ### cron-apt
 
-[Cron-apt](http://manpages.ubuntu.com/manpages/trusty/man8/cron-apt.8.html) is a small utility for running nightly checks for updated Linux packages using apt-get. By default, the tool updates the local package repository and downloads new packages but does not install them. I kept this default behavior because over time it becomes difficult to predict how package updates will affect running applications. The utility emails the Linux admin with the result of the previous night's update check; if there are updates that look important, the admin can just run
+[Cron-apt](http://manpages.ubuntu.com/manpages/trusty/man8/cron-apt.8.html) is a small utility for running nightly checks for updated Linux packages using apt-get. By default, the tool updates the local package repository and downloads new packages but does not install them. I kept this default behavior because over time it becomes difficult to predict how package updates will affect running applications. If you just apply all updates, applications you're hosting on the server can suddenly break after a particular package changes as the result of an update. Based on my own experience, it's better to apply updates manually. Cron-apt makes this easier by auto-downloading updates and alerting sysadmins to what has an update pending.
+
+The utility emails the Linux admin with the result of the previous night's update check; if there are updates that look important, the admin can just run
 
 ```
 sudo apt-get dist-upgrade
