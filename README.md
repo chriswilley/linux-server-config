@@ -88,6 +88,8 @@ Include /usr/share/modsecurity-crs/activated_rules/*.conf
 
 The first line ensured that the main rules config file would be included. The second line looks for additional rules in the activated_rules folder. I then created symbolic links to the rules I wanted to activate in that folder. I then restarted Apache and tested the application.
 
+A lot of rule tweaking was needed with mod_security, especially regarding the session cookies set for the Google and Facebook sign-in APIs. These tripped a bunch of rules related to SQL injection based on how the regular expressions in those rules were written. Eventually I got it to work.
+
 ### mod_evasive
 
 I also installed the [mod_evasive](http://www.zdziarski.com/blog/?page_id=442) Apache module. This module helps mitigate DOS attacks on Apache servers. I followed the advice of several online articles for the config (in /etc/apache2/mods-available/evasive.conf):
@@ -392,7 +394,7 @@ To improve performance, I added a memory swap file as one did not exist by defau
 
 I decided it would be a good idea to run a third party security scanner on the server to see if there were any areas of vulnerability I should address. After some web searching I found [lynis](https://cisofy.com/lynis/), a free security auditing tool. Setup was fairly easy, and after running the audit I found several things that could be made more secure (see some of the items under Software installed).
 
-I should note that several recommendations the scanner made I did not follow because they did not seem relevant (protection against data theft via USB thumb drives on an Amazon EC2 instance didn't seem needed; also items related to login passwords since password authentication is disabled). On the whole though, I found the exercise of running the audit and researching the tools needed to address security concerns very educational. I also improved the "hardening" score from 70 to 80 through my efforts, eliciting the high praise: "System seem to be decent hardened [sic]" from the scanner.
+I should note that several recommendations the scanner made I did not follow because they did not seem relevant (protection against data theft via USB thumb drives on an Amazon EC2 instance didn't seem needed; also items related to login passwords since password authentication is disabled). On the whole though, I found the exercise of running the audit and researching the tools needed to address security concerns very educational. I also improved the "hardening" score from 70 to 80 through my efforts, eliciting the high praise: "System seem to be decent hardened [sic]" from the scanner. You can see the results from the before and after scans in /var/log/lynis.log.before and /var/log/lynis.log.
 
 
 ## Resources used
