@@ -69,6 +69,44 @@ I added a site config site in /etc/apache2/sites-available/ called catalog.conf.
 
 I added comments to the host config file for reference. I also added a symlink to the file in /etc/apache2/sites-enabled, and removed the default symlink. Finally, I created a WSGI file in /var/www/catalog to provide the mechanism for Apache to be aware of the application (which would be stored elsewhere) as well as set up the virtual runtime environment (see below).
 
+### mod_security
+
+Even though Nginx is protecting Apache and filtering a lot of traffic before it hits the web server, I felt it was still a good idea to install additional modules to further safeguard Apache. One standard module is [mod_security](https://www.modsecurity.org/), a free and open source web application firewall. It does a lot of the same things fail2ban does (see below), but a wider community of security experts have written rules for mod_security.
+
+I installed the module following the docs and some resources found online. I made a small number of changes to the /etc/modsecurity/modsecurity.conf:
+
+* I set SecResponseBodyAccess to Off on the recommendation of several online articles
+* I increased the SecRequestBodyLimit to match the setting used in my application (32M); otherwise user uploaded images might get rejected
+* Once I had tested browsing the application, I set the SecRuleEngine setting to On to activate blocking
+
+I activated some of the rules in "base rules" (located in /usr/share/modsecurity-crs/base_rules/) based on what seemed to be a good baseline of coverage after reading the docs and source code. To do this, I edited the /etc/apache2/mods-enabled/modsecurity.conf and added the following lines:
+
+```
+Include /usr/share/modsecurity-crs/*.conf
+Include /usr/share/modsecurity-crs/activated_rules/*.conf
+```
+
+The first line ensured that the main rules config file would be included. The second line looks for additional rules in the activated_rules folder. I then created symbolic links to the rules I wanted to activate in that folder. I then restarted Apache and tested the application.
+
+### mod_evasive
+
+I also installed the [mod_evasive](http://www.zdziarski.com/blog/?page_id=442) Apache module. This module helps mitigate DOS attacks on Apache servers. I followed the advice of several online articles for the config (in /etc/apache2/mods-available/evasive.conf):
+
+```
+<IfModule mod_evasive20.c>
+    DOSHashTableSize    3097
+    DOSPageCount        2
+    DOSSiteCount        50
+    DOSPageInterval     1
+    DOSSiteInterval     1
+    DOSBlockingPeriod   10
+
+    DOSEmailNotify      root@localhost
+</IfModule>
+```
+
+These settings (see [this site](https://www.linode.com/docs/websites/apache-tips-and-tricks/modevasive-on-apache/) for definitions of the parameters) seemed like a good baseline configuration, and in a real production scenario I would probably keep an eye on performance and tweak these if needed.
+
 ### python/pip
 
 With the web server and reverse proxy in place, I could begin to deploy the application. For starters, I installed Python and pip. No special configuration was made to either package.
@@ -219,7 +257,59 @@ inet_interfaces = loopback-only
 
 I changed this in order to prevent Postfix from relaying mail from an outside host. Between this and the fact that the firewall blocks the default SMTP port (25), it's highly unlikely that a spammer could use this mail server as an open relay.
 
-I also added an alias to /etc/aliases for root to my own personal email address. That way mail to root@localhost or just root will be forwarded to my account.
+I also added an alias to /etc/aliases for root and student (the sudoer account I use to login) to my own personal email address. That way mail to root@localhost or just root will be forwarded to my account.
+
+### autolog
+
+I installed [autolog](http://manpages.ubuntu.com/manpages/trusty/man8/autolog.8.html) to terminate idle SSH sessions rather than keeping them active indefinitely. I made minimal config changes (in /etc/autolog.conf), just adding lines for each of the SSH capable users to log them off after 15 minutes of idle time.
+
+### AIDE
+
+On the advice of a security scan I ran, I installed several tools including [AIDE](https://help.ubuntu.com/community/FileIntegrityAIDE) (Advanced Intrusion Detection Environment). AIDE is a file integrity monitoring tool that, as its name implies, attempts to identify and warn of intrusions into the operating system. It does this by maintaining a database of all files in the filesystem and then checking the files periodically to make sure they match the database. Discrepancies are logged and can be emailed to a sysadmin.
+
+I basically kept the default config (in /etc/aide/aide.conf and /var/lib/aide/aide.conf) after installing the tool and setting up the database. Having this additional layer of security is comforting.
+
+### sysstat
+
+Another useful tool recommended by the security scan is [sysstat](http://sebastien.godard.pagesperso-orange.fr/). This gathers system performance stats and provides a number of useful reports to help sysadmins find bottlenecks and other performance problems. For example, running
+
+```
+sar -u
+```
+
+will show system load information for the current day in ten-minute intervals up to the current time. There are many other report options. The reports can be output in CSV for importing into a database.
+
+I kept the default config for sysstat (in /etc/sysstat/sysstat). The program set up daily cron jobs to run the statistical data gathering on its own.
+
+### auditd
+
+The [auditd](http://manpages.ubuntu.com/manpages/trusty/man8/auditd.8.html) utility keeps a comprehensive auditing record of every action taken on a server for later forensic analysis. In addition, you can specify rules that cause auditd to watch specific files or commands and log their activity. This is a great tool for investigating an issue after the fact at a deep system level; over time as you become more familiar with a server's activity you can tweak the audit rules for your needs.
+
+I installed this utility and set it to run as a service, keeping the default configuration (in /etc/audit/auditd.conf).
+
+### acct
+
+In much the same way that auditd and AIDE watch file system activity, [acct](http://manpages.ubuntu.com/manpages/trusty/en/man5/acct.5.html) keeps a comprehensive record of user activity. The acct utility maintains a database of user activity and provides command line tools to query the data. For example:
+
+```
+sudo sa
+```
+
+will display a summary of commands executed by users and shows the amount of cpu time used by each command. The utility also records commands executed by system processes running as users, so you can track down problems that might be caused by cron jobs or other automated processes.
+
+### ClamAV
+
+Although malware is not as common on linux systems as with Windows, it is stil recommended to use malware scanners for production systems. One such application is [ClamAV](http://www.clamav.net/). This works much like a virus scanner for a PC, checking files on access and maintaining a database of known virus patterns. I installed the daemon verion of the Clam scanner as well as an automatic updater for virus definitions. I kept the default config (found in /etc/clamav/clamd.conf).
+
+### chkrootkit
+
+In the same spirit as ClamAV, I installed [chkrootkit](http://www.chkrootkit.org/) in order to keep an eye on potential malware infecting the system. The utility creates a daily cron job for itself, which you must enable in /etc/chkrootkit.conf in the first line:
+
+```
+RUN_DAILY="true"
+```
+
+I also modified the daily cron job to email me with the results of the scan.
 
 
 ## Other configuration changes
@@ -298,6 +388,12 @@ Because I changed the locations of the Nginx and Apache logs related to the cata
 
 To improve performance, I added a memory swap file as one did not exist by default with the Amazon image. I gave the swap file 500MB of space to help improve system memory usage. The swap file is located at /swapfile1. I also modified /etc/fstab to ensure the swap file would be enabled on system boot.
 
+### security audit
+
+I decided it would be a good idea to run a third party security scanner on the server to see if there were any areas of vulnerability I should address. After some web searching I found [lynis](https://cisofy.com/lynis/), a free security auditing tool. Setup was fairly easy, and after running the audit I found several things that could be made more secure (see some of the items under Software installed).
+
+I should note that several recommendations the scanner made I did not follow because they did not seem relevant (protection against data theft via USB thumb drives on an Amazon EC2 instance didn't seem needed; also items related to login passwords since password authentication is disabled). On the whole though, I found the exercise of running the audit and researching the tools needed to address security concerns very educational. I also improved the "hardening" score from 70 to 80 through my efforts, eliciting the high praise: "System seem to be decent hardened [sic]" from the scanner.
+
 
 ## Resources used
 
@@ -308,3 +404,7 @@ In addition to the links above and the various software docs, I used a lot of re
 * [Rob Golding's blog](http://www.robgolding.com/blog/2011/11/12/django-in-production-part-1---the-stack/): Although this post is about Django in production, the overall stack is what I was aiming for (especially the Nginx part). It's also what I've used for a couple of my own Django projects.
 * [peatiscoding](http://peatiscoding.me/geek-stuff/mod_wsgi-apache-virtualenv/): This post gave me some insights above and beyond the flask docs regarding Apache and mod_wsgi setup in a virtualenv.
 * [DigitalOcean Community](https://www.digitalocean.com/community/tutorials/how-to-protect-an-nginx-server-with-fail2ban-on-ubuntu-14-04): This blog post was HUGE in helping me setup fail2ban to protect Nginx. I ~~stole~~ borrowed from it liberally.
+* [This DigitalOcean post](https://www.digitalocean.com/community/tutorials/how-to-set-up-mod_security-with-apache-on-debian-ubuntu) helped me get Apache mod_security running properly.
+* [This site](http://www.thegeekstuff.com/2011/03/sar-examples/) was helpful in getting sysstat set up.
+* [Blog Overflow](http://security.blogoverflow.com/2013/01/a-brief-introduction-to-auditd/) helped me with setting up auditd.
+* [This Tecmint article](http://www.tecmint.com/how-to-monitor-user-activity-with-psacct-or-acct-tools/) had some great info on getting acct installed and working properly.
